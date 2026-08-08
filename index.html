@@ -57,7 +57,10 @@
   nav .titlu{padding:.9rem .65rem .3rem; font-size:.7rem; letter-spacing:.08em;
              text-transform:uppercase; color:var(--text-sters); opacity:.7}
 
-  aside footer{padding:.85rem 1.25rem; border-top:1px solid var(--linie)}
+  aside footer{padding:.85rem 1.25rem; border-top:1px solid var(--linie);
+    display:flex; align-items:center; justify-content:space-between; gap:.5rem}
+  .versiune{font-size:.72rem; color:var(--text-sters); opacity:.6;
+    font-variant-numeric:tabular-nums}
   button.mic{background:transparent; border:1px solid var(--linie); color:var(--text-sters);
     border-radius:7px; padding:.35rem .7rem; cursor:pointer; font-size:.82rem}
   button.mic:hover{border-color:var(--accent); color:var(--text)}
@@ -118,7 +121,14 @@
     <h1>Loguri server</h1>
     <div class="cine" id="cine"></div>
     <nav id="categorii"><div class="titlu">Categorii</div></nav>
-    <footer><button class="mic" id="btnIesire">Iesire</button></footer>
+    <footer>
+      <button class="mic" id="btnIesire">Iesire</button>
+      <!-- Marcajul de versiune: GitHub Pages si browserul tin pagina in cache, deci dupa ce
+           urci fisierul nou poti ramane minute bune cu cel vechi pe ecran, fara niciun semn.
+           Numarul asta il schimb la fiecare modificare -- daca nu-l vezi crescut, inseamna ca
+           te uiti tot la varianta veche, nu ca modificarea n-a mers. -->
+      <span class="versiune">v3 &middot; 08.08</span>
+    </footer>
   </aside>
 
   <main>
@@ -285,8 +295,6 @@ async function deseneazaCategorii() {
 
   for (const cat of chei) {
     const g = grupe.get(cat);
-    const areSub = g.sub.some(s => s.id);
-
     const cutie = document.createElement('div');
     const capat = document.createElement('button');
     capat.className = 'rand capat';
