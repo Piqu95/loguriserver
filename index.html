@@ -127,7 +127,7 @@
            urci fisierul nou poti ramane minute bune cu cel vechi pe ecran, fara niciun semn.
            Numarul asta il schimb la fiecare modificare -- daca nu-l vezi crescut, inseamna ca
            te uiti tot la varianta veche, nu ca modificarea n-a mers. -->
-      <span class="versiune">v4 &middot; 08.08</span>
+      <span class="versiune">v5 &middot; 08.08</span>
     </footer>
   </aside>
 
@@ -181,10 +181,11 @@ const NUME = {
   // activitati -- ce a MUNCIT jucatorul (culesul unui oregano, nu banii pe el)
   legendare:'Legendare', animale:'Animale', obiecte:'Obiecte', bautura:'Bautura',
   // lege si joburi
-  catuse:'Catuse', ['tura politie']:'Tura de politie',
+  catuse:'Catuse', perchezitii:'Perchezitii', confiscari:'Confiscari', inchisoare:'Inchisoare',
+  ['tura politie']:'Tura de politie',
   // admin
   actiuni:'Actiuni asupra jucatorilor', ['iteme si bani']:'Dat si sters iteme/bani',
-  raportari:'Raportari de la jucatori',
+  noclip:'Noclip',
   jucatori:'Asupra jucatorilor', troll:'Troll', sine:'Asupra lui insusi',
   teleport:'Teleportari', tichete:'Tichete',
   // morti
@@ -214,9 +215,9 @@ const SUBCATEGORII_STIUTE = {
                'agricultura','animale','jafuri','joburi'],
   craft:      ['obiecte','bautura'],
   job:        ['tura politie'],
-  lege:       ['catuse'],
+  lege:       ['catuse','perchezitii','confiscari','inchisoare'],
   moarte:     ['ucis de jucator','accidente','alte morti'],
-  admin:      ['actiuni','iteme si bani','teleport','troll','jucatori','sine','tichete'],
+  admin:      ['actiuni','iteme si bani','teleport','troll','jucatori','sine','noclip','tichete'],
 };
 
 const PE_PAGINA = 100;
