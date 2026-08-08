@@ -84,9 +84,10 @@
   .eticheta{display:inline-block; padding:.1rem .45rem; border-radius:4px; font-size:.72rem;
     background:var(--panou-2); border:1px solid var(--linie); color:var(--text-sters)}
   .eticheta.live{color:var(--verde); border-color:color-mix(in srgb,var(--verde) 45%,transparent)}
-  details.detalii summary{cursor:pointer; color:var(--text-sters); font-size:.8rem}
-  details.detalii pre{margin:.4rem 0 0; padding:.5rem .6rem; background:var(--panou-2);
-    border-radius:6px; font-size:.78rem; overflow-x:auto; color:var(--text-sters)}
+  /* detaliile, ca text citibil: eticheta stinsa, valoarea clara -- se vad dintr-o privire,
+     fara sa mai apesi pe nimic */
+  .det{display:inline-block; margin:0 .7rem .15rem 0; font-size:.79rem; white-space:nowrap}
+  .det b{font-weight:500; color:var(--text-sters); margin-right:.25rem}
   .gol{padding:3rem 1rem; text-align:center; color:var(--text-sters)}
   .subsol{padding:1rem; text-align:center}
 
@@ -160,12 +161,18 @@ const sb = supabase.createClient(URL_SUPABASE, CHEIE_PUBLICA);
 const NUME = {
   bani:'Bani', depozit:'Depozit', job:'Joburi', activitate:'Activitati', craft:'Craft',
   lege:'Lege', admin:'Admin', moarte:'Morti',
-  banca:'Banca', magazine:'Magazine', salarii:'Salarii', joburi:'Castiguri din joburi',
-  amenzi:'Amenzi', proprietati:'Proprietati', jafuri:'Jafuri', altele:'Altele',
-  cufere:'Cufere si depozite', transfer:'Intre jucatori',
+  // bani -- impartite dupa ACTIVITATE, nu dupa scriptul care a mutat banii
+  banca:'Banca', magazine:'Magazine', vanatoare:'Vanatoare', pescuit:'Pescuit',
+  cules:'Cules plante', minerit:'Minerit', lemn:'Lemn', petrol:'Petrol',
+  agricultura:'Agricultura', ferme:'Ferme', joburi:'Joburi', salarii:'Salarii',
+  proprietati:'Proprietati', amenzi:'Amenzi si facturi', jafuri:'Jafuri', altele:'Altele',
+  // depozit -- dupa felul depozitului, ca sa nu se amestece caruta cu casa
+  carute:'Carute', case:'Case', cufere:'Cufere', ['intre jucatori']:'Intre jucatori',
+  // admin
   jucatori:'Asupra jucatorilor', troll:'Troll', sine:'Asupra lui insusi',
   teleport:'Teleportari', tichete:'Tichete',
-  ['ucis de jucator']:'Ucis de jucator', accident:'Accident',
+  // morti
+  ['ucis de jucator']:'Ucis de jucator', accidente:'Accidente', ['alte morti']:'Alte morti',
 };
 const nume = (x) => NUME[x] || (x ? x.charAt(0).toUpperCase() + x.slice(1) : 'Fara subcategorie');
 
@@ -181,13 +188,17 @@ const MEREU_ARATATE = ORDINE;
 // lege). Sunt harta a ce urmeaza sa se logheze -- un zero acolo inseamna "nu e gata inca", nu
 // "nu s-a intamplat nimic". Se vad permanent, nu se desfac la click.
 const SUBCATEGORII_STIUTE = {
-  bani:       ['banca','magazine','salarii','joburi','amenzi','proprietati','jafuri','admin','altele'],
-  depozit:    ['cufere','transfer'],
+  // Ordinea nu e alfabetica, e dupa cat de des te uiti la ele: banii care intra si ies din
+  // banca si din magazine sunt primii, cei din munca la mijloc, cazurile rare la coada.
+  bani:       ['banca','magazine','vanatoare','pescuit','cules','minerit','lemn','petrol',
+               'agricultura','ferme','joburi','salarii','proprietati','amenzi','jafuri',
+               'admin','altele'],
+  depozit:    ['carute','ferme','case','cufere','intre jucatori'],
   activitate: ['vanatoare','legendare','petrol','minerit','pescuit','plante','lemn','agricultura','animale'],
   craft:      ['gater','masa fermei','munitie'],
   job:        ['angajat','dat afara','grad schimbat','tura politie'],
   lege:       ['catuse','perchezitii','confiscari','inchisoare','amenzi'],
-  moarte:     ['ucis de jucator','accident'],
+  moarte:     ['ucis de jucator','accidente','alte morti'],
   admin:      ['jucatori','troll','sine','teleport','tichete'],
 };
 
@@ -315,13 +326,40 @@ function celulaSuma(r) {
     Number(r.amount).toLocaleString('ro-RO')}</td>`;
 }
 
+// Detaliile veneau ca JSON brut -- corect, dar de necitit pentru cine nu scrie cod.
+// Le scoatem ca text simplu: "Item: carne · Depozit: caruta 12".
+//
+// Cheile pe care le sarim sunt cele tehnice (id-uri interne): nu-i spun nimic omului care se
+// uita in loguri, iar propozitia din coloana principala zice deja despre cine e vorba.
+const ETICHETE = {
+  item:'Item', depozit:'Depozit', catre:'Catre', moneda:'Moneda', ramas:'Ramas',
+  resursa:'Script', arma:'Arma', loc:'Loc', coordonate:'Coordonate', grad:'Grad',
+  asupra:'Asupra', mesaj:'Mesaj', tichet:'Tichet', unde:'Unde',
+};
+const SARITE = new Set(['catre_id', 'asupra_id']);
+
+const numar = (n) => n.toLocaleString('ro-RO', { maximumFractionDigits: 2 });
+
+function detaliiCitibile(d) {
+  if (!d || typeof d !== 'object') return '';
+
+  const bucati = [];
+  for (const [cheie, val] of Object.entries(d)) {
+    if (val === null || val === undefined || val === '' || SARITE.has(cheie)) continue;
+    const eticheta = ETICHETE[cheie] || (cheie.charAt(0).toUpperCase() + cheie.slice(1));
+    const text = typeof val === 'number' ? numar(val)
+               : typeof val === 'object' ? JSON.stringify(val)
+               : String(val);
+    bucati.push(`<span class="det"><b>${curat(eticheta)}</b> ${curat(text)}</span>`);
+  }
+  return bucati.join('');
+}
+
 function adaugaRanduri(date) {
   const corp = $('randuri');
   for (const r of date) {
     const tr = document.createElement('tr');
-    const detalii = r.details
-      ? `<details class="detalii"><summary>vezi</summary><pre>${
-          curat(JSON.stringify(r.details, null, 2))}</pre></details>` : '';
+    const detalii = detaliiCitibile(r.details);
     tr.innerHTML =
       `<td class="cand">${candFormatat(r.created_at)}</td>` +
       `<td>${curat(r.action)}</td>` +
