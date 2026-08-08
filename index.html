@@ -57,6 +57,18 @@
   nav .titlu{padding:.9rem .65rem .3rem; font-size:.7rem; letter-spacing:.08em;
              text-transform:uppercase; color:var(--text-sters); opacity:.7}
 
+  /* blocul de stergere -- apare doar la proprietar, si e vopsit altfel decat restul,
+     ca sa nu ajungi pe el din greseala cand vrei sa dai click pe o categorie */
+  #administrare{padding:.7rem 1.25rem; border-top:1px solid var(--linie);
+    display:flex; flex-direction:column; gap:.4rem}
+  #administrare .titluAdmin{font-size:.7rem; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--text-sters); opacity:.7; margin-bottom:.1rem}
+  button.periculos{border-color:color-mix(in srgb,var(--rosu) 50%,transparent);
+    color:color-mix(in srgb,var(--rosu) 85%,var(--text))}
+  button.periculos:hover{border-color:var(--rosu); color:var(--rosu);
+    background:color-mix(in srgb,var(--rosu) 12%,transparent)}
+  button.periculos:disabled{opacity:.5; cursor:default}
+
   aside footer{padding:.85rem 1.25rem; border-top:1px solid var(--linie);
     display:flex; align-items:center; justify-content:space-between; gap:.5rem}
   .versiune{font-size:.72rem; color:var(--text-sters); opacity:.6;
@@ -121,13 +133,22 @@
     <h1>Loguri server</h1>
     <div class="cine" id="cine"></div>
     <nav id="categorii"><div class="titlu">Categorii</div></nav>
+
+    <!-- Ascuns pentru toata lumea. Se arata doar daca baza de date raspunde ca ai voie --
+         pagina nu hotaraste asta singura, doar intreaba. -->
+    <div id="administrare" hidden>
+      <div class="titluAdmin">Administrare</div>
+      <button class="mic periculos" id="btnStergeZile">Sterge ultimele 10 zile</button>
+      <button class="mic periculos" id="btnStergeTot">Sterge tot</button>
+    </div>
+
     <footer>
       <button class="mic" id="btnIesire">Iesire</button>
       <!-- Marcajul de versiune: GitHub Pages si browserul tin pagina in cache, deci dupa ce
            urci fisierul nou poti ramane minute bune cu cel vechi pe ecran, fara niciun semn.
            Numarul asta il schimb la fiecare modificare -- daca nu-l vezi crescut, inseamna ca
            te uiti tot la varianta veche, nu ca modificarea n-a mers. -->
-      <span class="versiune">v5 &middot; 08.08</span>
+      <span class="versiune">v7 &middot; 08.08</span>
     </footer>
   </aside>
 
@@ -178,6 +199,7 @@ const NUME = {
   proprietati:'Proprietati', amenzi:'Amenzi si facturi', jafuri:'Jafuri', altele:'Altele',
   // depozit -- dupa felul depozitului, ca sa nu se amestece caruta cu casa
   carute:'Carute', case:'Case', cufere:'Cufere', ['intre jucatori']:'Intre jucatori',
+  aruncate:'Aruncate pe jos',
   // activitati -- ce a MUNCIT jucatorul (culesul unui oregano, nu banii pe el)
   legendare:'Legendare', animale:'Animale', obiecte:'Obiecte', bautura:'Bautura',
   // lege si joburi
@@ -210,7 +232,7 @@ const SUBCATEGORII_STIUTE = {
   bani:       ['banca','magazine','vanatoare','pescuit','cules','minerit','lemn','petrol',
                'agricultura','ferme','joburi','salarii','proprietati','amenzi','jafuri',
                'admin','altele'],
-  depozit:    ['carute','ferme','case','cufere','intre jucatori'],
+  depozit:    ['carute','ferme','case','cufere','intre jucatori','aruncate'],
   activitate: ['cules','minerit','pescuit','vanatoare','legendare','lemn','petrol',
                'agricultura','animale','jafuri','joburi'],
   craft:      ['obiecte','bautura'],
@@ -222,6 +244,13 @@ const SUBCATEGORII_STIUTE = {
 
 const PE_PAGINA = 100;
 let categorie = '', subcategorie = '', dela = 0, seIncarca = false;
+
+// Cate zile sterge butonul "Sterge ultimele N zile". Schimbi aici si se schimba si eticheta.
+const ZILE_DE_STERS = 10;
+
+// Totalul din stanga, tinut minte ca sa-l putem arata in intrebarea de confirmare -- "stergi
+// 8.412 loguri?" te face sa te gandesti altfel decat "stergi tot?".
+let totalLoguri = 0;
 
 const $ = (id) => document.getElementById(id);
 const curat = (t) => String(t ?? '').replace(/</g, '&lt;');
@@ -291,6 +320,8 @@ async function deseneazaCategorii() {
     return b;
   };
 
+  totalLoguri = total;
+
   // "Toate"
   const toate = faRand('Toate', total, () => alege('', '', 'Toate', toate));
   toate.classList.add('activ');
@@ -351,8 +382,12 @@ const ETICHETE = {
   item:'Item', depozit:'Depozit', catre:'Catre', moneda:'Moneda', ramas:'Ramas',
   resursa:'Script', arma:'Arma', loc:'Loc', coordonate:'Coordonate', grad:'Grad',
   asupra:'Asupra', mesaj:'Mesaj', tichet:'Tichet', unde:'Unde',
+  // adaugate pentru Lege si tichete
+  minute:'Minute', tinta:'Tinta', subiect:'Subiect',
 };
-const SARITE = new Set(['catre_id', 'asupra_id']);
+// Id-urile interne ale itemelor si armelor confiscate nu-i spun nimic nimanui -- numele
+// jucatorului si cantitatea sunt deja in propozitie.
+const SARITE = new Set(['catre_id', 'asupra_id', 'id_item', 'id_arma']);
 
 const numar = (n) => n.toLocaleString('ro-RO', { maximumFractionDigits: 2 });
 
@@ -421,6 +456,45 @@ $('fSursa').addEventListener('change', () => incarca(true));
 $('btnReimprospatare').addEventListener('click', () => { incarca(true); deseneazaCategorii(); });
 $('btnMaiMulte').addEventListener('click', () => incarca(false));
 
+// ---------------------------------------------------------------------------
+// Stergerea logurilor -- doar pentru proprietar
+// ---------------------------------------------------------------------------
+// Butoanele nu sunt securitate, sunt comoditate. Cine are voie se hotaraste in baza de date,
+// in `pot_sterge()`, si tot acolo se verifica din nou la stergerea propriu-zisa. Daca cineva
+// cheama functia din consola browserului, primeste refuz de la Postgres, nu de la pagina.
+async function verificaDrepturile() {
+  const { data, error } = await sb.rpc('pot_sterge');
+  // Daca functia inca nu e creata in Supabase, nu e o eroare de care sa se impiedice cineva:
+  // pur si simplu nu apar butoanele.
+  if (error) { console.warn('pot_sterge:', error.message); return; }
+  $('administrare').hidden = !data;
+}
+
+async function sterge(zile, intrebare) {
+  if (!confirm(intrebare)) return;
+
+  const butoane = [$('btnStergeTot'), $('btnStergeZile')];
+  for (const b of butoane) b.disabled = true;
+
+  const { data, error } = await sb.rpc('sterge_logurile', { zile });
+
+  for (const b of butoane) b.disabled = false;
+
+  if (error) { alert('Nu s-a putut sterge: ' + error.message); return; }
+
+  alert(`Sters: ${Number(data).toLocaleString('ro-RO')} loguri.`);
+  await deseneazaCategorii();
+  incarca(true);
+}
+
+$('btnStergeTot').addEventListener('click', () => sterge(null,
+  `Stergi TOATE cele ${totalLoguri.toLocaleString('ro-RO')} loguri?\n\nNu se poate da inapoi.`));
+
+$('btnStergeZile').textContent = `Sterge ultimele ${ZILE_DE_STERS} zile`;
+$('btnStergeZile').addEventListener('click', () => sterge(ZILE_DE_STERS,
+  `Stergi logurile din ultimele ${ZILE_DE_STERS} zile?\n\n` +
+  `Cele mai vechi de atat raman. Nu se poate da inapoi.`));
+
 async function porneste() {
   const { data:{ user } } = await sb.auth.getUser();
   if (!user) return;
@@ -428,6 +502,7 @@ async function porneste() {
   $('app').classList.add('pornit');
   $('cine').textContent = caUtilizator(user.email);
   await deseneazaCategorii();
+  verificaDrepturile();
   incarca(true);
 }
 
