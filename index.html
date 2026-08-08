@@ -127,7 +127,7 @@
            urci fisierul nou poti ramane minute bune cu cel vechi pe ecran, fara niciun semn.
            Numarul asta il schimb la fiecare modificare -- daca nu-l vezi crescut, inseamna ca
            te uiti tot la varianta veche, nu ca modificarea n-a mers. -->
-      <span class="versiune">v3 &middot; 08.08</span>
+      <span class="versiune">v4 &middot; 08.08</span>
     </footer>
   </aside>
 
@@ -178,7 +178,13 @@ const NUME = {
   proprietati:'Proprietati', amenzi:'Amenzi si facturi', jafuri:'Jafuri', altele:'Altele',
   // depozit -- dupa felul depozitului, ca sa nu se amestece caruta cu casa
   carute:'Carute', case:'Case', cufere:'Cufere', ['intre jucatori']:'Intre jucatori',
+  // activitati -- ce a MUNCIT jucatorul (culesul unui oregano, nu banii pe el)
+  legendare:'Legendare', animale:'Animale', obiecte:'Obiecte', bautura:'Bautura',
+  // lege si joburi
+  catuse:'Catuse', ['tura politie']:'Tura de politie',
   // admin
+  actiuni:'Actiuni asupra jucatorilor', ['iteme si bani']:'Dat si sters iteme/bani',
+  raportari:'Raportari de la jucatori',
   jucatori:'Asupra jucatorilor', troll:'Troll', sine:'Asupra lui insusi',
   teleport:'Teleportari', tichete:'Tichete',
   // morti
@@ -204,12 +210,13 @@ const SUBCATEGORII_STIUTE = {
                'agricultura','ferme','joburi','salarii','proprietati','amenzi','jafuri',
                'admin','altele'],
   depozit:    ['carute','ferme','case','cufere','intre jucatori'],
-  activitate: ['vanatoare','legendare','petrol','minerit','pescuit','plante','lemn','agricultura','animale'],
-  craft:      ['gater','masa fermei','munitie'],
-  job:        ['angajat','dat afara','grad schimbat','tura politie'],
-  lege:       ['catuse','perchezitii','confiscari','inchisoare','amenzi'],
+  activitate: ['cules','minerit','pescuit','vanatoare','legendare','lemn','petrol',
+               'agricultura','animale','jafuri','joburi'],
+  craft:      ['obiecte','bautura'],
+  job:        ['tura politie'],
+  lege:       ['catuse'],
   moarte:     ['ucis de jucator','accidente','alte morti'],
-  admin:      ['jucatori','troll','sine','teleport','tichete'],
+  admin:      ['actiuni','iteme si bani','teleport','troll','jucatori','sine','tichete'],
 };
 
 const PE_PAGINA = 100;
